@@ -1,35 +1,67 @@
-import pandas as pd 
-from sklearn.model_selection import train_test_split 
-from sklearn.tree import DecisionTreeClassifier 
-from sklearn import metrics 
+import pandas as pd
+import feast
+from sklearn.model_selection import train_test_split
+from sklearn.tree import DecisionTreeClassifier
+from sklearn import metrics
 import joblib
-import os 
+import os
+from datetime import datetime, timedelta
 
-DATA_PATH = 'data/iris.csv'
 MODEL_DIR = 'artifacts'
 MODEL_NAME = 'model.joblib'
 METRICS_FILE = 'metrics.txt'
-
 MODEL_PATH = os.path.join(MODEL_DIR, MODEL_NAME)
+
+FEATURE_REPO_PATH = 'feature_repo/'
 
 os.makedirs(MODEL_DIR, exist_ok=True)
 
-print(f"Loading data from {DATA_PATH}...")
+print("Connecting to Feast Feature Store at", FEATURE_REPO_PATH)
 try:
-    data = pd.read_csv(DATA_PATH)
-except FileNotFoundError:
-    print(f"Error: {DATA_PATH} not found.")
-    print("Please ensure the data file is present. If using DVC, you might need to run 'dvc pull'.")
+    fs = feast.FeatureStore(repo_path=FEATURE_REPO_PATH)
+    print("Connection successful.")
+except Exception as e:
+    print(f"Error connecting to Feast Feature Store: {e}")
     exit(1)
-print("Data loaded successfully.")
+
+features_to_get = [
+    "iris_features:sepal_length",
+    "iris_features:sepal_width",
+    "iris_features:petal_length",
+    "iris_features:petal_width",
+]
+target_feature = "iris_target:species"
+
+print("Loading entity list from local prepared data...")
+try:
+    entity_df = pd.read_csv("data/iris_prepared.csv")[['iris_id', 'event_timestamp']]
+    entity_df['event_timestamp'] = pd.to_datetime(entity_df['event_timestamp'])
+    print(f"Found {len(entity_df)} entities.")
+
+except FileNotFoundError:
+    print("Error: data/iris_prepared.csv not found.")
+    print("Please run prepare_data.py first.")
+    exit(1)
+
+print("Retrieving historical features from BigQuery via Feast...")
+training_df = fs.get_historical_features(
+    entity_df=entity_df,
+    features=features_to_get + [target_feature],
+).to_df()
+print("Feature retrieval complete.")
+print("\n--- Training Data Sample ---")
+print(training_df.head())
+print("----------------------------\n")
+
+
 
 print("Splitting data...")
-train, test = train_test_split(data, test_size=0.4, stratify=data['species'], random_state=42)
-X_train = train[['sepal_length', 'sepal_width', 'petal_length', 'petal_width']]
-y_train = train.species
-X_test = test[['sepal_length', 'sepal_width', 'petal_length', 'petal_width']]
-y_test = test.species
+X = training_df.drop(columns=['iris_id', 'event_timestamp', 'species'])
+y = training_df['species']
+
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.4, stratify=y, random_state=42)
 print("Data split complete.")
+
 
 print("Training Decision Tree model...")
 mod_dt = DecisionTreeClassifier(max_depth=3, random_state=1)
