@@ -4,7 +4,6 @@
 .dvc/lock
 
 # Original data files tracked by DVC
-/dvc/iris.csv
 /artifacts/model.joblib
 
 # Other common ignores
