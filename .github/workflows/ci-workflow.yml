@@ -1,0 +1,40 @@
+# .github/workflows/ci-workflow.yml
+
+name: Sanity Test and CML Report
+
+# --- THIS IS THE PART TO FIX ---
+# It should trigger on a pull_request to the main branch, not on a push.
+on:
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  run-data-validation:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Set up Python 3.9
+        uses: actions/setup-python@v4
+        with:
+          python-version: 3.9
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Prepare data file
+        run: python prepare_data.py
+      
+      - name: Run data validation sanity test
+        run: |
+          pytest tests/test_data_validation.py --verbose | tee report.txt
+      
+      - name: Create CML report
+        env:
+          REPO_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          cml comment create report.txt
