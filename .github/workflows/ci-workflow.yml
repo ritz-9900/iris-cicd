@@ -32,6 +32,14 @@ jobs:
       - name: Run data validation sanity test
         run: |
           pytest tests/test_data_validation.py --verbose | tee report.txt
+
+      - name: Install Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+
+      - name: Install CML 
+        run: npm install -g @dvcorg/cml
       
       - name: Create CML report
         env:
