@@ -122,5 +122,5 @@ voluptuous
 wcwidth
 yarl
 zc.lockfile
-pytest
+pytest==7.4.4
 cml
