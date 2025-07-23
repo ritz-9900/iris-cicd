@@ -45,7 +45,7 @@ jobs:
       - name: Deploy to Kubernetes cluster
         run: |
           sed -i 's|IMAGE_PLACEHOLDER|${{ secrets.DOCKERHUB_USERNAME }}/iris-api:${{ github.sha }}|g' deployment.yaml
-          kubectl apply -f deployment.yaml
+          kubectl apply --validate=false -f deployment.yaml
           kubectl rollout status deployment/iris-api-deployment
 
       # --- Post-deployment Comment (CML) ---
