@@ -9,11 +9,11 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      # Checkout the repository
+      # --- Checkout Code ---
       - name: Checkout repository
         uses: actions/checkout@v3
 
-      # --- Part 1: Build and Push Docker Image ---
+      # --- Docker Build & Push ---
       - name: Login to Docker Hub
         uses: docker/login-action@v2
         with:
@@ -28,13 +28,7 @@ jobs:
           push: true
           tags: ${{ secrets.DOCKERHUB_USERNAME }}/iris-api:${{ github.sha }}
 
-      # --- Part 2: Deploy to Kubernetes ---
-
-      - name: Decode Kubeconfig and Set Kubeconfig Environment Variable
-        run: |
-          echo "${{ secrets.KUBE_CONFIG }}" | base64 --decode > kubeconfig.yaml
-          echo "KUBECONFIG=$(pwd)/kubeconfig.yaml" >> $GITHUB_ENV
-
+      # --- Install gcloud CLI & auth plugin ---
       - name: Install gcloud SDK and GKE auth plugin
         run: |
           sudo apt-get update && sudo apt-get install -y apt-transport-https ca-certificates gnupg
@@ -42,15 +36,24 @@ jobs:
             sudo tee -a /etc/apt/sources.list.d/google-cloud-sdk.list
           curl https://packages.cloud.google.com/apt/doc/apt-key.gpg | \
             sudo apt-key --keyring /usr/share/keyrings/cloud.google.gpg add -
-          sudo apt-get update && sudo apt-get install -y google-cloud-sdk-gke-gcloud-auth-plugin
+          sudo apt-get update && sudo apt-get install -y google-cloud-sdk google-cloud-sdk-gke-gcloud-auth-plugin
 
+      # --- Authenticate with GCP ---
+      - name: Authenticate gcloud with service account
+        run: |
+          echo "${{ secrets.GCP_SA_KEY }}" > sa-key.json
+          gcloud auth activate-service-account --key-file=sa-key.json
+          gcloud config set project velvety-rookery-461404-b5
+          gcloud container clusters get-credentials iris-cluster --zone us-central1-a
+
+      # --- Deploy to Kubernetes ---
       - name: Deploy to Kubernetes cluster
         run: |
           sed -i 's|IMAGE_PLACEHOLDER|${{ secrets.DOCKERHUB_USERNAME }}/iris-api:${{ github.sha }}|g' deployment.yaml
           kubectl apply -f deployment.yaml
           kubectl rollout status deployment/iris-api-deployment
 
-      # --- Part 3: CML Reporting ---
+      # --- Post-deployment Comment (CML) ---
       - name: Set up Node.js for CML
         uses: actions/setup-node@v3
         with:
