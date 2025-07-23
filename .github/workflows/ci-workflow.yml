@@ -2,8 +2,6 @@
 
 name: Continuous Deployment - Deploy Iris API to Kubernetes
 
-# This workflow triggers ONLY on a push to the 'main' branch
-# (i.e., after a PR is successfully merged).
 on:
   push:
     branches: [ main ]
@@ -16,7 +14,7 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v3
 
-      # --- Part 1: Build and Push Docker Image ---
+      # --- Part 1: Build and Push Docker Image (No changes here) ---
       - name: Login to Docker Hub
         uses: docker/login-action@v2
         with:
@@ -26,31 +24,32 @@ jobs:
       - name: Build and Push Docker Image
         uses: docker/build-push-action@v4
         with:
-          context: . # Use the root of the repo as the build context
+          context: .
           file: ./Dockerfile
-          push: true # Actually push the image to Docker Hub
-          # We tag the image with the unique Git commit SHA for perfect versioning
+          push: true
           tags: ${{ secrets.DOCKERHUB_USERNAME }}/iris-api:${{ github.sha }}
 
-      # --- Part 2: Deploy to Kubernetes ---
-      - name: Set up Kubeconfig
-        uses: azure/k8s-set-context@v3
-        with:
-          method: kubeconfig
-          kubeconfig: ${{ secrets.KUBE_CONFIG }}
+      # --- Part 2: Deploy to Kubernetes (THIS SECTION IS FIXED) ---
+
+      # --- NEW STEP: Decode the Kubeconfig Secret ---
+      - name: Decode Kubeconfig and Set Kubeconfig Environment Variable
+        run: |
+          # The 'echo' command pipes the secret into the 'base64' command to decode it.
+          # The output is then written to a temporary file.
+          echo "${{ secrets.KUBE_CONFIG }}" | base64 --decode > kubeconfig.yaml
+          
+          # We then set an environment variable pointing to this new file.
+          echo "KUBECONFIG=$(pwd)/kubeconfig.yaml" >> $GITHUB_ENV
 
       - name: Deploy to Kubernetes cluster
         run: |
-          # Use 'sed' to replace the 'IMAGE_PLACEHOLDER' in our manifest with the real image tag
           sed -i 's|IMAGE_PLACEHOLDER|${{ secrets.DOCKERHUB_USERNAME }}/iris-api:${{ github.sha }}|g' deployment.yaml
           
-          # Apply the updated configuration to the cluster. Kubernetes handles the rolling update.
+          # Kubectl will now automatically use the KUBECONFIG env var we set in the previous step.
           kubectl apply -f deployment.yaml
-          
-          # Wait for the new version to be successfully rolled out
           kubectl rollout status deployment/iris-api-deployment
 
-      # --- Part 3: Report Deployment Status with CML ---
+      # --- Part 3: CML Reporting (No changes here) ---
       - name: Set up Node.js for CML
         uses: actions/setup-node@v3
         with:
