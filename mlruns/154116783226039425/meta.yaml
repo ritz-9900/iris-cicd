@@ -1,0 +1,6 @@
+artifact_location: file:///home/ritikranjan1212/week2/mlruns/154116783226039425
+creation_time: 1751709636835
+experiment_id: '154116783226039425'
+last_update_time: 1751709636835
+lifecycle_stage: active
+name: iris_decision_tree_tuning

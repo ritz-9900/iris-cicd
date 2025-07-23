@@ -1,0 +1,41 @@
+# deployment.yaml
+
+# --- 1. The Deployment: Manages the running instances (pods) of your application ---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: iris-api-deployment
+spec:
+  replicas: 1 # Start with a single instance
+  selector:
+    matchLabels:
+      app: iris-api
+  template:
+    metadata:
+      labels:
+        app: iris-api
+    spec:
+      containers:
+      - name: iris-api-container
+        # IMPORTANT: This is a placeholder. The CD pipeline will automatically replace it
+        # with the correct Docker image name and tag during deployment.
+        image: IMAGE_PLACEHOLDER
+        ports:
+        - containerPort: 8000 # The port where our FastAPI app is running
+
+---
+# --- 2. The Service: Creates a stable network endpoint (IP address) for our API ---
+apiVersion: v1
+kind: Service
+metadata:
+  name: iris-api-service
+spec:
+  # 'LoadBalancer' is the easiest way to expose the service to the internet
+  # on cloud platforms (like GKE) or with local tools (like Minikube).
+  type: LoadBalancer 
+  selector:
+    app: iris-api # This must match the 'app' label in the Deployment above
+  ports:
+  - protocol: TCP
+    port: 80 # The public port that users will access
+    targetPort: 8000 # The internal container port to send traffic to
