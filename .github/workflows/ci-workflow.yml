@@ -41,6 +41,13 @@ jobs:
         with: 
           credentials_json: '${{ secrets.GCP_SA_KEY }}'
 
+      # --- Get GKE credentials (ADD THIS) ---
+      - name: Get GKE credentials
+        run: |
+          gcloud config set project velvety-rookery-461404-b5
+          gcloud container clusters get-credentials iris-cluster --zone us-central1-a --project velvety-rookery-461404-b5
+
+
       # --- Deploy to Kubernetes ---
       - name: Deploy to Kubernetes cluster
         run: |
