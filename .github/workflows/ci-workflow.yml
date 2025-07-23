@@ -45,7 +45,7 @@ jobs:
       - name: Get GKE credentials
         run: |
           gcloud config set project velvety-rookery-461404-b5
-          gcloud container clusters get-credentials iris-cluster --zone us-central1-a --project velvety-rookery-461404-b5
+          gcloud container clusters get-credentials iris-cluster --zone us-central1 --project velvety-rookery-461404-b5
 
 
       # --- Deploy to Kubernetes ---
