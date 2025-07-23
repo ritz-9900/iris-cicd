@@ -28,23 +28,18 @@ jobs:
           push: true
           tags: ${{ secrets.DOCKERHUB_USERNAME }}/iris-api:${{ github.sha }}
 
-      # --- Install gcloud CLI & auth plugin ---
-      - name: Install gcloud SDK and GKE auth plugin
-        run: |
-          sudo apt-get update && sudo apt-get install -y apt-transport-https ca-certificates gnupg
-          echo "deb [signed-by=/usr/share/keyrings/cloud.google.gpg] https://packages.cloud.google.com/apt cloud-sdk main" | \
-            sudo tee -a /etc/apt/sources.list.d/google-cloud-sdk.list
-          curl https://packages.cloud.google.com/apt/doc/apt-key.gpg | \
-            sudo apt-key --keyring /usr/share/keyrings/cloud.google.gpg add -
-          sudo apt-get update && sudo apt-get install -y google-cloud-sdk google-cloud-sdk-gke-gcloud-auth-plugin
+      # --- Install gcloud SDK and GKE auth plugin ---
+      - name: Install gcloud SDK
+        uses: google-github-actions/setup-gcloud@v1
+        with:
+          version: 'latest'
+          export_default_credentials: false
 
       # --- Authenticate with GCP ---
       - name: Authenticate gcloud with service account
-        run: |
-          echo "${{ secrets.GCP_SA_KEY }}" > sa-key.json
-          gcloud auth activate-service-account --key-file=sa-key.json
-          gcloud config set project velvety-rookery-461404-b5
-          gcloud container clusters get-credentials iris-cluster --zone us-central1-a
+        uses: 'google-github-actions/auth@v2'
+        with: 
+          credentials_json: '${{ secrets.GCP_SA_KEY }}'
 
       # --- Deploy to Kubernetes ---
       - name: Deploy to Kubernetes cluster
@@ -66,4 +61,4 @@ jobs:
         env:
           REPO_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          cml comment create --commit-sha=${{ github.sha }} "✅ **Deployment Successful**\n\nA new version of the Iris API has been deployed to Kubernetes.\n* **Image Tag:** `${{ secrets.DOCKERHUB_USERNAME }}/iris-api:${{ github.sha }}`"
+          cml comment create --commit-sha=${{ github.sha }} "✅ **Deployment Successful**\n\nA new version of the Iris API has been deployed to Kubernetes.\n\n📦 **Image Tag:** \`${{ secrets.DOCKERHUB_USERNAME }}/iris-api:${{ github.sha }}\`"
