@@ -10,16 +10,18 @@ import os
 app = FastAPI(title="Iris Model API", description="API for predicting Iris species", version="1.0")
 
 # 2. Load your model artifact
-MODEL_DIR = 'artifacts'
-MODEL_NAME = 'model.joblib'
-MODEL_PATH = os.path.join(MODEL_DIR, MODEL_NAME)
+# --- CHANGE THIS SECTION ---
+# We simplify the path. The Dockerfile will now place the model
+# in the same directory as this script.
+MODEL_PATH = 'model.joblib' 
 
 try:
     model = joblib.load(MODEL_PATH)
-    print(f"Model '{MODEL_NAME}' loaded successfully from '{MODEL_PATH}'")
+    print(f"Model loaded successfully from '{MODEL_PATH}'")
 except FileNotFoundError:
     print(f"Error: Model file not found at '{MODEL_PATH}'. The API will not be able to make predictions.")
     model = None
+# --- END OF CHANGES ---
 
 # 3. Define the structure of the input data for validation
 class IrisData(BaseModel):
