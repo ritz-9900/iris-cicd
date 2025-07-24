@@ -17,11 +17,16 @@ spec:
     spec:
       containers:
       - name: iris-api-container
-        # IMPORTANT: This is a placeholder. The CD pipeline will automatically replace it
-        # with the correct Docker image name and tag during deployment.
-        image: IMAGE_PLACEHOLDER
+        image: IMAGE_PLACEHOLDER # This is replaced by your CD pipeline
         ports:
-        - containerPort: 8000 # The port where our FastAPI app is running
+        - containerPort: 8000
+        # --- ✅ ADD THIS ENTIRE BLOCK ---
+        # This tells GKE Autopilot how much CPU and Memory to give your pod.
+        resources:
+          requests:
+            cpu: "250m"
+            memory: "512Mi"
+        # --- END OF ADDED BLOCK ---
 
 ---
 # --- 2. The Service: Creates a stable network endpoint (IP address) for our API ---
@@ -30,12 +35,10 @@ kind: Service
 metadata:
   name: iris-api-service
 spec:
-  # 'LoadBalancer' is the easiest way to expose the service to the internet
-  # on cloud platforms (like GKE) or with local tools (like Minikube).
   type: LoadBalancer 
   selector:
-    app: iris-api # This must match the 'app' label in the Deployment above
+    app: iris-api
   ports:
   - protocol: TCP
-    port: 80 # The public port that users will access
-    targetPort: 8000 # The internal container port to send traffic to
+    port: 80
+    targetPort: 8000
