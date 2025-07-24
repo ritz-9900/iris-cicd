@@ -1,50 +1,59 @@
 # train.py (Refactored for Hyperparameter Tuning with MLflow)
 
 import pandas as pd
-import feast
-import mlflow
-import mlflow.sklearn
-from sklearn.model_selection import train_test_split, GridSearchCV
+
+from sklearn.model_selection import train_test_split
+
+
 from sklearn.tree import DecisionTreeClassifier
 from sklearn import metrics
 import joblib
 import os
 
-# --- Constants ---
+
+# Define constants for file paths
+
+
 MODEL_DIR = 'artifacts'
 MODEL_NAME = 'best_model.joblib' # We now save the 'best' model
 METRICS_FILE = 'metrics.txt'
 MODEL_PATH = os.path.join(MODEL_DIR, MODEL_NAME)
-FEATURE_REPO_PATH = 'feature_repo/'
-MLFLOW_EXPERIMENT_NAME = "iris_decision_tree_tuning" # Name for our experiment
+
+TRAINING_DATA_PATH = 'data/iris_prepared.csv'
 
 def train_and_evaluate():
     """
-    This function now includes hyperparameter tuning with GridSearchCV
-    and experiment tracking with MLflow.
+    This function encapsulates the entire model training and evaluation process.
+    It reads data from a local CSV, trains a model, evaluates it,
+    saves the artifacts, and returns the accuracy.
     """
     os.makedirs(MODEL_DIR, exist_ok=True)
 
-    # --- 1. Feature Retrieval (Same as before) ---
-    print("Connecting to Feast Feature Store...")
-    fs = feast.FeatureStore(repo_path=FEATURE_REPO_PATH)
-    
-    print("Loading entity list...")
-    entity_df = pd.read_csv("data/iris_prepared.csv")[['iris_id', 'event_timestamp']]
-    entity_df['event_timestamp'] = pd.to_datetime(entity_df['event_timestamp'])
+    print(f"Loading training data from {TRAINING_DATA_PATH}...")
+    try:
+        # Load the data directly from the local prepared CSV file
+        training_df = pd.read_csv(TRAINING_DATA_PATH)
+        print(f"Found {len(training_df)} records.")
+    except FileNotFoundError:
+        raise FileNotFoundError(
+            f"Error: {TRAINING_DATA_PATH} not found. "
+            "Please run prepare_data.py first."
+        )
 
-    print("Retrieving historical features...")
-    training_df = fs.get_historical_features(
-        entity_df=entity_df,
-        features=[
-            "iris_features:sepal_length", "iris_features:sepal_width",
-            "iris_features:petal_length", "iris_features:petal_width",
-            "iris_target:species"
-        ],
-    ).to_df()
+    print("\n--- Training Data Sample ---")
+    print(training_df.head())
+    print("----------------------------\n")
 
-    X = training_df.drop(columns=['iris_id', 'event_timestamp', 'species'])
-    y = training_df['species']
+    print("Splitting data...")
+    # Define features (X) and target (y)
+    # The species column needs to be mapped from string to integer for the model
+    species_map = {'setosa': 0, 'versicolor': 1, 'virginica': 2}
+    training_df['species_encoded'] = training_df['species'].map(species_map)
+
+    X = training_df.drop(columns=['iris_id', 'event_timestamp', 'species', 'species_encoded'])
+    y = training_df['species_encoded']
+
+
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.4, stratify=y, random_state=42)
     
     # --- 2. Set up MLflow Experiment ---
@@ -107,4 +116,10 @@ def train_and_evaluate():
     return accuracy
 
 if __name__ == "__main__":
+
+    print("Running simplified train.py as a script...")
     train_and_evaluate()
+    print("\ntrain.py script finished.")
+
+#
+
