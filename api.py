@@ -36,31 +36,31 @@ def predict(data: IrisData):
     print("--- PREDICT ENDPOINT HIT ---")
 
     if model is None:
-        print("--- ERROR: Model is None, returning error. ---")
         return {"error": "Model could not be loaded. Please check the server logs for the specific error."}
 
     try:
-        print("--- STEP 1: Converting input data to dictionary. ---")
-        input_data = data.dict()
-        print(f"--- STEP 2: Input data is: {input_data} ---")
+        print("--- STEP 1: Converting input data to DataFrame. ---")
+        input_df = pd.DataFrame([data.dict()])
+        print(f"--- STEP 2: DataFrame created successfully. ---")
 
-        input_df = pd.DataFrame([input_data])
-        print(f"--- STEP 3: Created pandas DataFrame. ---")
-
-        prediction_raw = model.predict(input_df)[0]
-        print(f"--- STEP 4: Prediction successful. Raw output: {prediction_raw} ---")
+        # --- ✅ FINAL TEST: We comment out the model prediction ---
+        # We will return a hardcoded value instead.
+        # If this request succeeds, the crash is on the model.predict() line.
+        # If it still fails, the crash is on the pd.DataFrame() line.
+        
+        # prediction_raw = model.predict(input_df)[0]
+        prediction_raw = 1 # Dummy value
+        
+        print(f"--- STEP 3: Using dummy prediction. Raw output: {prediction_raw} ---")
 
         species_map = {0: 'setosa', 1: 'versicolor', 2: 'virginica'}
-        print("--- STEP 5: Defined species map. ---")
-
         predicted_species = species_map.get(int(prediction_raw), "Unknown")
-        print(f"--- STEP 6: Mapped prediction to species: {predicted_species} ---")
-
+        
         response = {
             "prediction": int(prediction_raw),
             "predicted_species": predicted_species
         }
-        print("--- STEP 7: Created response object. Returning success. ---")
+        print("--- STEP 4: Created response object. Returning success. ---")
         return response
 
     except Exception as e:
