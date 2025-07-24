@@ -15,8 +15,11 @@ RUN echo "fastapi" >> requirements.txt && \
     pip install --no-cache-dir --trusted-host pypi.python.org -r requirements.txt
 
 # 4. Copy your application code and your model artifact into the container
+# --- CHANGE THIS SECTION ---
 COPY ./api.py .
-COPY ./artifacts ./artifacts/
+# Copy the model directly from the local 'artifacts' folder into the container's '/app' directory
+COPY ./artifacts/model.joblib .
+# --- END OF CHANGES ---
 
 # 5. Expose port 8000 to allow traffic to the container
 EXPOSE 8000
