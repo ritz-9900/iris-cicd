@@ -90,6 +90,7 @@ jobs:
           # The GITHUB_TOKEN is required for CML to post comments to the repository.
           REPO_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          # ✅ FIX: Pipe the comment content into the CML command. This is a more
-          # reliable way to pass multi-line strings with special characters.
-          echo "✅ **Deployment Successful**\n\nA new version of the Iris API has been deployed to Kubernetes.\n\n📦 **Image Tag:** \`${{ secrets.DOCKERHUB_USERNAME }}/iris-api:${{ github.sha }}\`" | cml comment create --commit-sha=${{ github.sha }}
+          # ✅ FIX: Write the comment to a file and pass the file to CML.
+          # This is the most reliable method for multi-line strings.
+          echo "✅ **Deployment Successful**\n\nA new version of the Iris API has been deployed to Kubernetes.\n\n📦 **Image Tag:** \`${{ secrets.DOCKERHUB_USERNAME }}/iris-api:${{ github.sha }}\`" > cml-comment.md
+          cml comment create cml-comment.md --commit-sha=${{ github.sha }}
