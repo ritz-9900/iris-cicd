@@ -21,7 +21,5 @@ COPY ./artifacts/model.joblib .
 EXPOSE 8000
 
 # 6. Define the command to run when the container starts
-# --- ✅ TEMPORARY DEBUGGING STEP ---
-# This command replaces the uvicorn server with a simple loop that prints to the log.
-# This will test if the GKE logging system is capturing ANY output from the container.
-CMD ["python", "-c", "import time; print('--- LOGGING TEST STARTED ---'); [print(f'Logging... {i}'); time.sleep(5) for i in range(120)]"]
+# This runs your actual application with detailed logging enabled.
+CMD ["uvicorn", "api:app", "--host", "0.0.0.0", "--port", "8000", "--log-level", "debug"]
