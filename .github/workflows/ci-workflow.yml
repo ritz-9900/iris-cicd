@@ -20,6 +20,11 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v3
 
+      - name: Pull DVC tracked data 
+        uses: iterative/dvc-action@v1 
+        with:
+          run: dvc pull
+
       # --- 2. Docker Build & Push ---
       # This section logs into Docker Hub, builds the Docker image, and pushes it.
       - name: Login to Docker Hub
