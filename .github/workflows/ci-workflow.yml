@@ -90,5 +90,6 @@ jobs:
           # The GITHUB_TOKEN is required for CML to post comments to the repository.
           REPO_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          # ✅ FIX: The markdown comment string must come BEFORE the --commit-sha option.
-          cml comment create "✅ **Deployment Successful**\n\nA new version of the Iris API has been deployed to Kubernetes.\n\n📦 **Image Tag:** \`${{ secrets.DOCKERHUB_USERNAME }}/iris-api:${{ github.sha }}\`" --commit-sha=${{ github.sha }}
+          # ✅ FIX: Pipe the comment content into the CML command. This is a more
+          # reliable way to pass multi-line strings with special characters.
+          echo "✅ **Deployment Successful**\n\nA new version of the Iris API has been deployed to Kubernetes.\n\n📦 **Image Tag:** \`${{ secrets.DOCKERHUB_USERNAME }}/iris-api:${{ github.sha }}\`" | cml comment create --commit-sha=${{ github.sha }}
