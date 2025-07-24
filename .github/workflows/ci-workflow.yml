@@ -19,6 +19,17 @@ jobs:
       # Checks out the repository code so the workflow can access it.
       - name: Checkout repository
         uses: actions/checkout@v3
+
+      # --- ✅ ADD THE NEW TRAINING STEP HERE ---
+      - name: Train Production Model
+        run: |
+          echo "Installing dependencies for training..."
+          pip install -r requirements.txt
+          
+          echo "Running training script to generate model.joblib..."
+          python train.py
+          
+          echo "Model training complete. model.joblib is ready for Docker."
         
       # --- 2. Docker Build & Push ---
       # This section logs into Docker Hub, builds the Docker image, and pushes it.
