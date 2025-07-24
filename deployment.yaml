@@ -22,6 +22,7 @@ spec:
         - containerPort: 8000
         # --- ✅ ADD THIS ENTIRE BLOCK ---
         # This tells GKE Autopilot how much CPU and Memory to give your pod.
+        # This will fix the "Insufficient memory" and "Insufficient cpu" errors.
         resources:
           requests:
             cpu: "250m"
