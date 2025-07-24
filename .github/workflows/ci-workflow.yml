@@ -20,6 +20,20 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v3
 
+      # --- 2. GCP Authentication & GKE Setup ---
+      # This block MUST come before the training step.
+      - name: Install gcloud SDK
+        uses: google-github-actions/setup-gcloud@v1
+        with:
+          version: 'latest'
+          # ✅ This is critical for the Feast library to find the credentials
+          export_default_credentials: true
+
+      - name: Authenticate gcloud with service account
+        uses: 'google-github-actions/auth@v2'
+        with:
+          credentials_json: '${{ secrets.GCP_SA_KEY }}'
+
       # --- ✅ ADD THE NEW TRAINING STEP HERE ---
       - name: Train Production Model
         run: |
