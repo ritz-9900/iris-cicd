@@ -16,35 +16,10 @@ jobs:
 
     steps:
       # --- 1. Checkout Code ---
-      # Checks out the repository code so the workflow can access it.
+      # Checks out the repository code. This now includes the pre-trained model.joblib.
       - name: Checkout repository
         uses: actions/checkout@v3
 
-      # --- 2. GCP Authentication & GKE Setup ---
-      # This block MUST come before the training step.
-      - name: Install gcloud SDK
-        uses: google-github-actions/setup-gcloud@v1
-        with:
-          version: 'latest'
-          # ✅ This is critical for the Feast library to find the credentials
-          export_default_credentials: true
-
-      - name: Authenticate gcloud with service account
-        uses: 'google-github-actions/auth@v2'
-        with:
-          credentials_json: '${{ secrets.GCP_SA_KEY }}'
-
-      # --- ✅ ADD THE NEW TRAINING STEP HERE ---
-      - name: Train Production Model
-        run: |
-          echo "Installing dependencies for training..."
-          pip install -r requirements.txt
-          
-          echo "Running training script to generate model.joblib..."
-          python train.py
-          
-          echo "Model training complete. model.joblib is ready for Docker."
-        
       # --- 2. Docker Build & Push ---
       # This section logs into Docker Hub, builds the Docker image, and pushes it.
       - name: Login to Docker Hub
@@ -63,15 +38,13 @@ jobs:
           tags: ${{ secrets.DOCKERHUB_USERNAME }}/iris-api:${{ github.sha }}
 
       # --- 3. GCP Authentication & GKE Setup ---
-      # Installs the gcloud CLI and authenticates with your Google Cloud project.
+      # Installs the gcloud CLI and authenticates with your Google Cloud project to deploy to GKE.
       - name: Install gcloud SDK
         uses: google-github-actions/setup-gcloud@v1
         with:
           version: 'latest'
           export_default_credentials: false
       
-      # --- Install GKE Auth Plugin ---
-      # This is the required step to allow kubectl to authenticate with GKE clusters.
       - name: Install gke-gcloud-auth-plugin
         run: gcloud components install gke-gcloud-auth-plugin
 
@@ -90,18 +63,11 @@ jobs:
       # Deploys the application to the GKE cluster.
       - name: Deploy to Kubernetes cluster
         run: |
-          # Replaces the image placeholder in the deployment manifest with the newly built image.
           sed -i 's|IMAGE_PLACEHOLDER|${{ secrets.DOCKERHUB_USERNAME }}/iris-api:${{ github.sha }}|g' deployment.yaml
-          
-          # Applies the Kubernetes manifest to the cluster.
           kubectl apply --validate=false -f deployment.yaml
-          
-          # Waits for the deployment to complete successfully.
           kubectl rollout status deployment/iris-api-deployment
 
       # --- 5. Post-deployment Comment (using CML) ---
-      # This section uses Continuous Machine Learning (CML) to post a success
-      # message as a comment on the commit that triggered the workflow.
       - name: Set up Node.js for CML
         uses: actions/setup-node@v3
         with:
@@ -112,10 +78,7 @@ jobs:
 
       - name: Post deployment status as a comment on the merge commit
         env:
-          # The GITHUB_TOKEN is required for CML to post comments to the repository.
           REPO_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          # ✅ FIX: Write the comment to a file and pass the file to CML.
-          # This is the most reliable method for multi-line strings.
           echo "✅ **Deployment Successful**\n\nA new version of the Iris API has been deployed to Kubernetes.\n\n📦 **Image Tag:** \`${{ secrets.DOCKERHUB_USERNAME }}/iris-api:${{ github.sha }}\`" > cml-comment.md
           cml comment create cml-comment.md --commit-sha=${{ github.sha }}

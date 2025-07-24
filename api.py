@@ -33,26 +33,17 @@ class IrisData(BaseModel):
 @app.post("/predict")
 def predict(data: IrisData):
     """Takes Iris flower measurements and returns the predicted species."""
-    print("--- PREDICT ENDPOINT HIT ---")
-
     if model is None:
         return {"error": "Model could not be loaded. Please check the server logs for the specific error."}
 
     try:
-        print("--- STEP 1: Converting input data to DataFrame. ---")
+        # Convert the input into a pandas DataFrame
         input_df = pd.DataFrame([data.dict()])
-        print(f"--- STEP 2: DataFrame created successfully. ---")
-
-        # --- ✅ FINAL TEST: We comment out the model prediction ---
-        # We will return a hardcoded value instead.
-        # If this request succeeds, the crash is on the model.predict() line.
-        # If it still fails, the crash is on the pd.DataFrame() line.
         
-        # prediction_raw = model.predict(input_df)[0]
-        prediction_raw = 1 # Dummy value
+        # Make the prediction with the actual model
+        prediction_raw = model.predict(input_df)[0]
         
-        print(f"--- STEP 3: Using dummy prediction. Raw output: {prediction_raw} ---")
-
+        # Map the numeric output to a human-readable class name
         species_map = {0: 'setosa', 1: 'versicolor', 2: 'virginica'}
         predicted_species = species_map.get(int(prediction_raw), "Unknown")
         
@@ -60,7 +51,6 @@ def predict(data: IrisData):
             "prediction": int(prediction_raw),
             "predicted_species": predicted_species
         }
-        print("--- STEP 4: Created response object. Returning success. ---")
         return response
 
     except Exception as e:

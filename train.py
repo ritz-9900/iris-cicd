@@ -1,68 +1,48 @@
 import pandas as pd
-import feast
 from sklearn.model_selection import train_test_split
 from sklearn.tree import DecisionTreeClassifier
 from sklearn import metrics
 import joblib
 import os
-import sys
 
-
+# Define constants for file paths
 MODEL_DIR = 'artifacts'
 MODEL_NAME = 'model.joblib'
 METRICS_FILE = 'metrics.txt'
 MODEL_PATH = os.path.join(MODEL_DIR, MODEL_NAME)
-FEATURE_REPO_PATH = 'feature_repo/'
-
+TRAINING_DATA_PATH = 'data/iris_prepared.csv'
 
 def train_and_evaluate():
     """
     This function encapsulates the entire model training and evaluation process.
-    It connects to Feast, retrieves features, trains a model, evaluates it,
+    It reads data from a local CSV, trains a model, evaluates it,
     saves the artifacts, and returns the accuracy.
     """
     os.makedirs(MODEL_DIR, exist_ok=True)
 
-    print("Connecting to Feast Feature Store at", FEATURE_REPO_PATH)
+    print(f"Loading training data from {TRAINING_DATA_PATH}...")
     try:
-        fs = feast.FeatureStore(repo_path=FEATURE_REPO_PATH)
-        print("Connection successful.")
-    except Exception as e:
-        print(f"Error connecting to Feast Feature Store: {e}")
-        raise
-
-    features_to_get = [
-        "iris_features:sepal_length",
-        "iris_features:sepal_width",
-        "iris_features:petal_length",
-        "iris_features:petal_width",
-    ]
-    target_feature = "iris_target:species"
-
-    print("Loading entity list from local prepared data...")
-    try:
-        entity_df = pd.read_csv("data/iris_prepared.csv")[['iris_id', 'event_timestamp']]
-        entity_df['event_timestamp'] = pd.to_datetime(entity_df['event_timestamp'])
-        print(f"Found {len(entity_df)} entities.")
+        # Load the data directly from the local prepared CSV file
+        training_df = pd.read_csv(TRAINING_DATA_PATH)
+        print(f"Found {len(training_df)} records.")
     except FileNotFoundError:
         raise FileNotFoundError(
-            "Error: data/iris_prepared.csv not found. "
+            f"Error: {TRAINING_DATA_PATH} not found. "
             "Please run prepare_data.py first."
         )
 
-    print("Retrieving historical features from BigQuery via Feast...")
-    training_df = fs.get_historical_features(
-        entity_df=entity_df,
-        features=features_to_get + [target_feature],
-    ).to_df()
-    print("Feature retrieval complete.")
     print("\n--- Training Data Sample ---")
     print(training_df.head())
     print("----------------------------\n")
 
     print("Splitting data...")
-    X = training_df.drop(columns=['iris_id', 'event_timestamp', 'species'])
-    y = training_df['species']
+    # Define features (X) and target (y)
+    # The species column needs to be mapped from string to integer for the model
+    species_map = {'setosa': 0, 'versicolor': 1, 'virginica': 2}
+    training_df['species_encoded'] = training_df['species'].map(species_map)
+
+    X = training_df.drop(columns=['iris_id', 'event_timestamp', 'species', 'species_encoded'])
+    y = training_df['species_encoded']
 
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.4, stratify=y, random_state=42)
     print("Data split complete.")
@@ -90,6 +70,6 @@ def train_and_evaluate():
 
 
 if __name__ == "__main__":
-    print("Running train.py as a script...")
+    print("Running simplified train.py as a script...")
     train_and_evaluate()
     print("\ntrain.py script finished.")
