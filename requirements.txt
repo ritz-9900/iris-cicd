@@ -6,6 +6,7 @@ joblib>=1.2.0
 
 # This is the most important one. We are telling pip to use a modern Feast version.
 feast[gcp]>=0.36.0
+mlflow
 
 pytest>=7.4.0
 
