@@ -6,7 +6,7 @@ kind: Deployment
 metadata:
   name: iris-api-deployment
 spec:
-  replicas: 1 # Start with a single instance
+  replicas: 5 # Start with a single instance
   selector:
     matchLabels:
       app: iris-api
