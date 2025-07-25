@@ -10,4 +10,6 @@ mlflow
 
 pytest>=7.4.0
 
+locust
+
 #
